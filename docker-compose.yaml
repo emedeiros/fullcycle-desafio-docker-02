@@ -1,0 +1,83 @@
+version: '3'
+# Criar a rede
+networks:
+   desafio-02:
+     driver: bridge
+
+services:
+    db:
+       image: mysql:5.7
+ 
+       # No caso específico do MySQL, há um comando que devemos rodar,
+       # senão dá pau.
+       # Esse "command" é o que roda depois do ENTRYPOINT padrão
+       command: --innodb-use-native-aio=0
+ 
+       container_name: db
+ 
+       # Se o container cair, ele será registrado automaticamente
+       restart: always
+ 
+       # Habilitar o TTY simulado para que seja possível entrar no sistema e digitar comandos
+       tty: true
+ 
+       # !!!
+       # Uma pasta mysql deve ser criada no mesmo nível
+       # onde está o arquivo docker-compose.yaml (pelo menos para este caso de uso da aula)
+       # O propósito disso é indicar a imagem, que tudo o que for gravado na pasta
+       # ./mysql:/var/lib/mysql do Linux (do container), também será gravado nesta nossa
+       # pasta mysql no DockerHost
+       # Fazemos isso configurando o volume
+       # Assim, se matarmos o container e subir ele novamente, os dados nao serao perdidos
+       volumes:
+           - ./mysql:/var/lib/mysql
+ 
+       # Criando as variaveis de ambiente
+       environment:
+           # Nota: Essa imagem padrão do MySQL que estamos utilizando,
+           # cria o banco de dados, nome de usuário e senha, baseado
+           # nessas variáveis de ambiente que estamos definindo
+           - MYSQL_DATABASE=nodedb
+           - MYSQL_USER=user01
+           - MYSQL_PASSWORD=abc123
+           - MYSQL_ROOT_PASSWORD=adcde$123456
+ 
+       networks:
+           - desafio-02
+    
+    # APP NodeJS
+    app:
+        build:
+            # Folder where is the image and the dockerfile
+            context : ./node
+            dockerfile: Dockerfile.prod
+        image: estevaomc/desafio-02-node:latest
+        container_name: app
+        # entrypoint: dockerize -wait tcp://db:3306 -timeout 20s docker-entrypoint.sh
+        entrypoint: dockerize -wait tcp://db:3306 -timeout 20s node index.js
+        networks:
+            - desafio-02
+        volumes:
+            - ./node:/usr/src/app
+        tty: true
+        ports:
+            - '3000:3000'
+        depends_on:
+            - db
+    # NGINX como Proxy Reverso
+    nginx:
+        build:
+            context: ./nginx
+            dockerfile: Dockerfile
+        image: estevaomc/desafio-02-nginx:latest
+        container_name: nginx
+        ports: 
+          - "8080:80"
+        # restart: always
+        networks: 
+            - desafio-02
+        entrypoint: dockerize -wait tcp://app:3000 -timeout 20s nginx -g "daemon off;"
+        depends_on:
+            - app
+      
+

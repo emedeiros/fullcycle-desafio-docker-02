@@ -1,0 +1,22 @@
+# 1º: Utilizando a última versão da imagem node como imagem base
+FROM node:18 as buildStage02
+
+# 2º: Definir o diretório de trabalho
+WORKDIR /usr/src/app
+
+# 3º: Instalar o dockerize
+RUN apt-get update && apt-get install -y wget
+ENV DOCKERIZE_VERSION v0.6.1
+RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
+    && tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
+    && rm dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz
+
+# 4º Copiando o conteudo da pasta node ao diretorio de trabalho  
+COPY . .
+ 
+# 5º: Expor a porta
+EXPOSE 3000
+
+# 6º: Comando para iniciar a app express 
+CMD ["node", "index.js"]
+
