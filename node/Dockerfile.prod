@@ -12,7 +12,9 @@ RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSI
     && rm dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz
 
 # 4º Copiando o conteudo da pasta node ao diretorio de trabalho  
-COPY . .
+# COPY . .
+COPY *.js .
+COPY package.json .
  
 # 5º: Expor a porta
 EXPOSE 3000
